@@ -1,7 +1,7 @@
 """
 portfolio_median.py
 
-Created by claude.ai
+created by calude.ai
 
 Calculates the median PLN price for a stock in a given quarter by:
 1. Fetching daily price history from Yahoo Finance (via the yfinance library)
@@ -146,6 +146,12 @@ def merge_nearest_rate(prices: pd.DataFrame, rates: pd.DataFrame) -> pd.DataFram
         prices["rate"] = 1.0
         return prices
 
+    # Cast both Date columns to the same resolution (us) before merging —
+    # yfinance returns M8[s], pandas/NBP produces M8[us]; merge_asof requires identical dtypes.
+    prices = prices.copy()
+    rates = rates.copy()
+    prices["Date"] = prices["Date"].astype("datetime64[us]")
+    rates["Date"] = rates["Date"].astype("datetime64[us]")
     prices = prices.sort_values("Date")
     rates = rates.sort_values("Date")
     merged = pd.merge_asof(prices, rates, on="Date", direction="backward")
