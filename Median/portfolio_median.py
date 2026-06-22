@@ -1,8 +1,7 @@
 """
+portfolio_median.py
 
 Created by claude.ai
-
-portfolio_median.py
 
 Calculates the median PLN price for a stock in a given quarter by:
 1. Fetching daily price history from Yahoo Finance (via the yfinance library)
@@ -97,8 +96,12 @@ def fetch_yahoo_prices(ticker: str, d1: date, d2: date) -> pd.DataFrame:
         )
 
     df = hist.reset_index()[["Date", "Close"]].rename(columns={"Close": "price"})
-    # Normalize to timezone-naive dates for clean merging later
-    df["Date"] = pd.to_datetime(df["Date"]).dt.tz_localize(None)
+    # yfinance may return timezone-aware timestamps — strip tz and normalize
+    # to date-only (midnight) so merge_asof can join cleanly with NBP dates
+    dates = pd.to_datetime(df["Date"])
+    if dates.dt.tz is not None:
+        dates = dates.dt.tz_convert(None)
+    df["Date"] = dates.dt.normalize()
     return df
 
 
@@ -131,7 +134,7 @@ def fetch_nbp_rates(currency_code: str, d1: date, d2: date) -> pd.DataFrame:
         )
 
     df = pd.DataFrame(all_rows)
-    df["Date"] = pd.to_datetime(df["Date"])
+    df["Date"] = pd.to_datetime(df["Date"]).dt.normalize()
     return df.sort_values("Date").reset_index(drop=True)
 
 
@@ -209,4 +212,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
